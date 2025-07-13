@@ -3,15 +3,26 @@
 <head>
   <title>Grow A Stock</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+
   <style>
     body {
       background: #111; color: #fff;
       font-family: Arial; padding: 20px; margin: 0;
     }
-    canvas {
-      background: #222; border: 1px solid #555;
+    p {
+      font-size:10px;
     }
+    .chart-canvas {
+  background: #222;
+  border: 1px solid #555;
+}
+
+#sparkCanvas {
+  background: transparent;
+}
+
     .controls {
       margin-top: 20px;
     }
@@ -32,7 +43,7 @@
     } 
     #leaderboard h3 {
       margin-top: 0;
-      color: gold;
+      color: #777;
     }
     #leaderboard ul {
       list-style: none;
@@ -44,237 +55,746 @@
     }
 .redbutton {
   background-color: crimson;
+  border-radius: 10px;
+  color: white;
+  border:0px;
+  width: 20%;
+  height: 60%;
+}
+.redbutton:hover {
+  background-color: grey;
+  border-radius: 10px;
+  color: white;
+  border:0px;
+  width: 20%;
+  height: 60%;
 }
 .greenbutton {
-  background-color: lime;
+  background-color: #597;
+  border-radius: 10px;
+  color: white;
+  border:0px;
+  width: 20%;
+  height: 60%;
 }
+.greenbutton:hover {
+background-color: grey;
+  border-radius: 10px;
+  color: white;
+  border:0px;
+  width: 20%;
+  height: 60%;
+}
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #1a1a1a;
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid #333;
+  padding: 10px 0;
+  z-index: 100;
+}
+
+.bottom-nav button {
+  background: none;
+  color: white;
+  border: none;
+  font-size: 14px;
+  flex: 1;
+  padding: 5px 0;
+  transition: color 0.2s ease;
+}
+
+.bottom-nav button:hover {
+  color: gold;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Optional: hide nav on wider screens */
+@media (min-width: 800px) {
+  .bottom-nav {
+    display: none;
+  }
+}
+
   </style>
 </head>
+
 <body>
-
-  <p> Cash: $<span id="cash">1000</span>
- •  Item: [<span id="selectedItem">Gold</span>]: <span id="inventory">0</span>
- <figure>Profit: $<span id="profit">0</span></figure>
-  </p>
-<figure></figure>
-<figure>User Active: <span id="playerCountDisplay">3</span></figure>
-<div style="overflow-x: auto;">
-  <canvas id="priceChart" style="min-width: 300px; height: 300px;"></canvas>
+  
+  <h3>Grow A Stock</h3>
+  <div id="DefualtTab" class="tab-content">
+    <center>
+  <h1>Grow A Stock 📊</h1>
+  <p>Grow Your Stock and Gained Cash</p>
+  <p>Learn to Grow a Stock and Strive like empire of trading</p>
+<div id="tipBox" style="margin-top:50%;">
+  Tip
 </div>
+<script>
+const tips = [
+  "Bumagsak man ang stock, hindi ibig sabihin babagsak ka rin.",
+  "Minsan kahit mataas na ang presyo, 'di mo pa rin kayang bitawan.",
+  "Nag-invest ka, pero siya hindi.",
+  "Hindi lahat ng pagbili may kita… minsan may sakit.",
+  "Parang chart ng feelings mo — paakyat, pababa, wala sa hulog.",
+  "Akala mo to the moon, yun pala to the floor.",
+  "Dati taas-presyo ka sa kanya… ngayon binarter ka nalang.",
+  "Minsan kahit sold out na, hindi ka pa rin pinili.",
+  "Yung akala mong long-term, naging short position pala.",
+  "Parang passive income—kahit wala kang ginagawa, iniisip mo pa rin siya.",
+  "Bumili ka kasi may value siya… sana ganun din siya sayo.",
+  "May pets ka na nga, pero bakit parang may kulang pa rin?",
+  "Nag-hold ka pa rin… kahit matagal na siyang umalis.",
+  "Mag-invest ka rin sa sarili mo, hindi lang puro sa kanya.",
+  "Breakout na sana, pero natakot ka — sayang."
+];
+function showRandomTip() {
+  const randomIndex = Math.floor(Math.random() * tips.length);
+  const tipBox = document.getElementById("tipBox");
+  tipBox.textContent = "Tip: " + tips[randomIndex];
+}
 
-<p>Market Price: $<span id="price">0</span></p>
-<div class="controls">
-  <select id="itemSelector" onchange="switchItem(this.value)">
-    <option value="Gold">Gold</option>
-    <option value="Crypto">Crypto</option>
-    <option value="Oil">Oil</option>
-  </select>
+// Initial tip + update every 30 seconds
+showRandomTip();
+setInterval(showRandomTip, 30000);
 
-  <input type="number" id="amount" placeholder="Amount" value="1">
-  <button class="redbutton" onclick="buy()">Buy</button>
-  <button class="greenbutton" onclick="sell()">Sell</button>
+</script>
+    </center>
+
+  </div>
+  
+  <div id="baseTab" class="tab-content">
+  <div id="leaderboard">
+    <h3>Top Profit Global</h3>
+    <ul id="leaderboardList"></ul>
+  </div>
+  <figure> Cash: $<span id="cashDisplay">1000</span> 
+  • Profit: <span id="profitDisplay">0</span>%</figure>
+  <figure></figure>
+  <figure>User Active: <span id="playerCountDisplay">3</span></figure>
+
+<div id="chartWrapper" style="position: relative;">
+  <canvas id="Chart" style="min-width: 300px; height: 300px;"></canvas>
+  <canvas id="sparkCanvas" style="
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  "></canvas>
+</div>
+  <p>Market Price: $<span id="priceDisplay">0</span></p>
+  <p>Item:(<span id="selectedItemDisplay">Oil</span> <span id="inventoryDisplay">0</span>x)</p>
+  <div class="controls">
+    <select id="itemSelector" onchange="switchItem(this.value)">
+      <option value="Gold">Gold</option>
+      <option value="Crypto">Crypto</option>
+      <option value="Oil">Oil</option>
+    </select>
+
+    <input type="number" id="amount" placeholder="Amount" value="1">
+    <hr>
+    <button class="greenbutton" onclick="buy()">Buy</button>
+    <button class="redbutton" onclick="sell()">Sell</button>
+
+    <p>Console:</p>
+    <div id="console"></div>
+  </div>
+
+
+
+
   <hr>
-  <p> GCE:</p>
-  <div id="console"></div>
+  <h3>🏡 Your Pets:</h3>
+  <hr>
+  <div id="eggList"></div>
+  <div id="petList"></div>
+  <hr style="margin-bottom:200px;">
 </div>
 
-<div id="leaderboard">
-  <h3>(Top Profit)</h3>
-  <ul id="leaderboardList"></ul>
+<div class="bottom-nav">
+  <button onclick="switchTab('baseTab')">Base</button>
+  <button onclick="switchTab('marketTab')">Shop</button>
+  <button onclick="switchTab('eggsTab')">Egg Shop</button>
 </div>
 
-<hr>
+<div id="marketTab" class="tab-content active">
+  <!-- Market content already in your code -->
+</div>
+
+<div id="eggsTab" class="tab-content">
+  <h3>🧳 Your Eggs</h3>
+  <button onclick="buyEgg('Basic Egg')">Buy Basic Egg ($500)</button>
+  <button onclick="buyEgg('Rare Egg')">Buy Rare Egg ($1500)</button>
+  <button onclick="buyEgg('Legendary Egg')">Buy Legendary Egg ($5000)</button>
+</div>
 
 <input hidden type="range" id="playerCount" min="0" max="100" value="3" oninput="changeFakePlayerCount(this.value)">
+
+<audio id="graphSound" src="Sounds/sound-3.mp3"></audio>
+<audio id="orderSound" src="Sounds/sound-1.mp3"></audio>
+<audio id="eventSound" src="Sounds/sound-2.mp3"></audio>
+<audio id="buy" src="Sounds/sound-4.mp3"></audio>
+<audio id="sell" src="Sounds/sound-5.mp3"></audio>
+
 <script>
-  let cash = parseFloat(localStorage.getItem('cash')) || 100;
-  let maxFakePlayers = parseInt(localStorage.getItem('fakePlayerCount')) || 10;
-  let fakePlayerCount = Math.floor(Math.random() * maxFakePlayers) + 1;
+const consoleDiv = document.getElementById("console");
 
-  const inventory = JSON.parse(localStorage.getItem('inventory')) || { Gold: 0,
-  Crypto: 0, 
-  Oil: 0
-  };
-  const profit = JSON.parse(localStorage.getItem('profit')) || { Gold: 0,
-  Crypto: 0,
-  Oil: 0
-  };
-  const prices = { 
-    Gold: 50,
-    Crypto: 120,
-    Oil: 40
-    };
-  let selected = 'Gold';
+function playSound(id) {
+  const audio = document.getElementById(id);
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play();
+  }
+}
 
-  const labels = [];
-  const data = {
-    labels: labels,
-    datasets: [{
-      label: 'Price',
-      data: [],
-      borderColor: 'lime',
-      backgroundColor: 'rgba(0,255,0,0.2)',
-      tension: 0.2
-    }]
-  };
+window.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("graphSound").volume = 0.8;
+  document.getElementById("orderSound").volume = 0.7;
+  document.getElementById("buy").volume = 0.5;
+  document.getElementById("sell").volume = 0.5;
+  document.getElementById("eventSound").volume = 0.7;
+});
 
-  const config = {
-    type: 'line',
-    data: data,
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          ticks: { color: '#fff' },
-          grid: { color: '#444' }
-        },
-        x: {
-          ticks: { color: '#fff' },
-          grid: { color: '#444' }
-        }
+// 🧮 Main data
+let cash = parseFloat(localStorage.getItem('cash')) || 100;
+let maxFakePlayers = parseInt(localStorage.getItem('fakePlayerCount')) || 100;
+let fakePlayerCount = Math.floor(Math.random() * maxFakePlayers) + 1;
+
+const inventory = JSON.parse(localStorage.getItem('inventory')) || { Gold: 0, Crypto: 0, Oil: 0 };
+const profit = JSON.parse(localStorage.getItem('profit')) || { Gold: 0, Crypto: 0, Oil: 0 };
+const prices = { Gold: 50, Crypto: 120, Oil: 40 };
+let selected = 'Gold';
+
+const labels = [];
+
+const data = {
+  labels: labels,
+  datasets: [{
+    label: 'Price',
+    data: [],
+    backgroundColor: 'rgba(0,255,0,0.1)',
+    borderColor: '#597',
+    segment: {
+      borderColor: ctx => {
+        const curr = ctx.p1.parsed.y;
+        const prev = ctx.p0.parsed.y;
+        return curr < prev ? 'Crimson' : '#597';
+        
       },
-      plugins: {
-        legend: { labels: { color: '#fff' } }
+      backgroundColor: ctx => {
+        const curr = ctx.p1.parsed.y;
+        const prev = ctx.p0.parsed.y;
+        return curr < prev ? 'rgba(220,20,60,0.1)' : 'rgba(0,255,0,0.1)';
       }
+    },
+    tension: 0.2 // ✅ This must be inside the dataset object
+  }]
+};
+
+
+const config = {
+  type: 'line',
+  data: data,
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: {
+      duration: 800,
+      easing: 'easeOutQuart'
+    },
+    scales: {
+      y: { ticks: { color: '#fff' }, grid: { color: '#444' } },
+      x: { ticks: { color: '#fff' }, grid: { color: '#444' } }
+    },
+    plugins: {
+      legend: { labels: { color: '#fff' } }
     }
-  };
+  }
+};
 
+data.datasets[0].pointRadius = 3;
+data.datasets[0].pointHoverRadius = 8;
+data.datasets[0].pointHoverBackgroundColor = '#597';
+
+
+let chart;
+
+// 🚀 Init
+window.addEventListener("load", () => {
+  switchTab("baseTab");
   const ctx = document.getElementById('priceChart').getContext('2d');
-  const chart = new Chart(ctx, config);
+  chart = new Chart(ctx, config); // ✅ config is now properly defined above
+  updateUI();
+  updateChart();
+  setInterval(updateChart, 3000);
+  setInterval(randomizeFakePlayerCount, 50000);
+});
 
-  const priceDisplay = document.getElementById("price");
-  const cashDisplay = document.getElementById("cash");
-  const inventoryDisplay = document.getElementById("inventory");
-  const profitDisplay = document.getElementById("profit");
-  const selectedItemDisplay = document.getElementById("selectedItem");
-  const playerCountDisplay = document.getElementById("playerCountDisplay");
-  const consoleDiv = document.getElementById("console");
-  const leaderboardList = document.getElementById("leaderboardList");
 
-  function logToConsole(msg) {
-    const line = document.createElement("div");
-    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    consoleDiv.appendChild(line);
-    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+const sparkCanvas = document.getElementById("sparkCanvas");
+const sparkCtx = sparkCanvas.getContext("2d");
+
+function resizeSparkCanvas() {
+  sparkCanvas.width = chart.canvas.offsetWidth;
+  sparkCanvas.height = chart.canvas.offsetHeight;
+}
+resizeSparkCanvas();
+window.addEventListener("resize", resizeSparkCanvas);
+
+class Spark {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.vx = (Math.random() - 0.5) * 2;
+    this.vy = (Math.random() - 0.5) * 2;
+    this.life = 40;
+    this.size = 2 + Math.random() * 2;
+    this.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
   }
 
-  function updateLeaderboard() {
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life--;
+  }
+
+  draw(ctx) {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+  }
+}
+
+const sparks = [];
+
+function emitSparksAtPoint(x, y, count = 10) {
+  for (let i = 0; i < count; i++) {
+    sparks.push(new Spark(x, y));
+  }
+}
+
+function animateSparks() {
+  sparkCtx.clearRect(0, 0, sparkCanvas.width, sparkCanvas.height);
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.update();
+    s.draw(sparkCtx);
+    if (s.life <= 0) sparks.splice(i, 1);
+  }
+  requestAnimationFrame(animateSparks);
+}
+animateSparks();
+
+
+function updateChart() {
+  const previousPrice = prices[selected];
+
+  // 🎲 Base random delta
+  let baseDelta = (Math.random() - 0.5) * 5;
+  prices[selected] = Math.max(1, Math.round(prices[selected] + baseDelta));
+
+  // 🧍 Market Player Activity
+  for (let i = 0; i < fakePlayerCount; i++) {
+    const action = Math.random() > 0.5 ? "buy" : "sell";
+    const amount = Math.floor(Math.random() * 100) + 1;
+    prices[selected] += (action === "buy" ? 1 : -1) * amount * 0.2;
+    if (Math.random() < 0.05) {
+      logToConsole(`🧍 A User ${action.toUpperCase()} ${amount} ${selected}`);
+    }
+  }
+
+  // ⚡ Hyper Surge Event
+  if (Math.random() < 0.001) {
+    const spike = Math.floor(Math.random() * 50) + 500;
+    prices[selected] += spike;
+    logToConsole(`🧍 A user buy 1K+ ${selected}, price jumped by $${spike}!`);
+    playSound("eventSound");
+    playSound("orderSound");
+  }
+
+  // 📈 Market Spike
+  if (Math.random() < 0.001) {
+    const spike = Math.floor(Math.random() * 50) + 150;
+    prices[selected] += spike;
+    logToConsole(`📈 MARKET: ${selected} surged by $${spike}!`);
+    playSound("orderSound");
+  }
+
+  // 📉 Boom or Crash
+  if (Math.random() < 0.01) {
+    const boom = Math.random() > 0.5;
+    prices[selected] += boom ? 20 : -20;
+    logToConsole(`📊 ${selected} ${boom ? 'BOOM!' : 'CRASH!'} Market Price Changed`);
+    playSound("eventSound");
+    playSound("orderSound");
+  }
+
+  // ⛔ Price cannot drop below 1
+  prices[selected] = Math.max(1, Math.round(prices[selected]));
+
+  // 🟢🟥 Dynamic Line Coloring
+
+if (prices[selected] > previousPrice) {
+  playSound("graphSound");
+
+}
+
+
+
+
+  // 📊 Push data to chart
+  const now = new Date().toLocaleTimeString();
+  labels.push(now);
+  data.datasets[0].data.push(prices[selected]);
+
+  if (labels.length > 20) {
+    labels.shift();
+    data.datasets[0].data.shift();
+  }
+
+  chart.update();
+  updateUI();
+}
+
+
+// 📟 UI
+function updateUI() {
+  priceDisplay.textContent = prices[selected];
+  cashDisplay.textContent = cash.toFixed(2);
+  inventoryDisplay.textContent = inventory[selected];
+  selectedItemDisplay.textContent = selected;
+  profitDisplay.textContent = profit[selected].toFixed(2);
+  playerCountDisplay.textContent = fakePlayerCount;
+  updateLeaderboard();
+  localStorage.setItem('cash', cash);
+  localStorage.setItem('fakePlayerCount', maxFakePlayers);
+  localStorage.setItem('inventory', JSON.stringify(inventory));
+  localStorage.setItem('profit', JSON.stringify(profit));
+}
+
+function buy() {
+  const amount = parseInt(document.getElementById("amount").value);
+  const total = amount * prices[selected];
+  if (cash >= total) {
+    if (!confirm(`Buy ${amount} ${selected} for $${total}?`)) return;
+    cash -= total;
+    inventory[selected] += amount;
+    playSound("buy");
+    logToConsole(`✅ YOU BOUGHT ${amount} ${selected} for $${total}`);
+      logToConsole(`🧍 A User buy ${amount} ${selected}`);
+    alert(`YOU BOUGHT ${amount} ${selected} for $${total}`);
+    updateUI();
+  } else {
+    alert("Not enough cash!");
+  }
+}
+
+function sell() {
+  const amount = parseInt(document.getElementById("amount").value);
+  if (inventory[selected] >= amount) {
+    const earned = amount * prices[selected];
+    if (!confirm(`Sell ${amount} ${selected} for $${earned}?`)) return;
+    cash += earned;
+    inventory[selected] -= amount;
+    profit[selected] += earned;
+    playSound("sell");
+    logToConsole(`💰 YOU SOLD ${amount} ${selected} for $${earned}`);
+    logToConsole(`🧍 A User sell ${amount} ${selected}`);
+    alert(`YOU SOLD ${amount} ${selected} for $${earned}`);
+    updateUI();
+  } else {
+    alert("Not enough inventory!");
+  }
+}
+
+function changeFakePlayerCount(val) {
+  maxFakePlayers = parseInt(val);
+  localStorage.setItem('fakePlayerCount', maxFakePlayers);
+}
+
+function randomizeFakePlayerCount() {
+  fakePlayerCount = Math.floor(Math.random() * maxFakePlayers) + 1;
+  updateUI();
+}
+
+function switchItem(item) {
+  selected = item;
+  labels.length = 0;
+  data.datasets[0].data.length = 0;
+  data.datasets[0].label = `${selected} Price`;
+  updateUI();
+}
+
+function switchTab(id) {
+  document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function logToConsole(msg) {
+  const line = document.createElement("div");
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  consoleDiv.appendChild(line);
+  consoleDiv.scrollTop = consoleDiv.scrollHeight;
+}
+
+function updateLeaderboard() {
   leaderboardList.innerHTML = '';
-
-  const sorted = Object.entries(profit)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3);
-
+  const sorted = Object.entries(profit).sort((a, b) => b[1] - a[1]).slice(0, 3);
   for (const [item] of sorted) {
-    const fakeProfit = (Math.random() * 5000 + 100).toFixed(2); // Randomized fake profit
+    const fakeProfit = (Math.random() * 5000 + 100).toFixed(2);
     const li = document.createElement('li');
     li.textContent = `${item}: $${fakeProfit}`;
     leaderboardList.appendChild(li);
   }
 }
-
-
-  function updateChart() {
-    let baseDelta = (Math.random() - 0.5) * 5;
-    prices[selected] = Math.max(1, Math.round(prices[selected] + baseDelta));
-
-    for (let i = 0; i < fakePlayerCount; i++) {
-      const action = Math.random() > 0.5 ? "buy" : "sell";
-      const amount = Math.floor(Math.random() * 3) + 1;
-      prices[selected] += (action === "buy" ? 1 : -1) * amount * 0.2;
-      if (Math.random() < 0.05) {
-        logToConsole(`A User ${action.toUpperCase()} ${amount} ${selected}`);
-      }
-    }
-
-    if (Math.random() < 0.01) {
-      const boom = Math.random() > 0.5;
-      prices[selected] += boom ? 20 : -20;
-      logToConsole(`MARKET: ${selected} ${boom ? 'BOOM! ' : 'CRASH!'} Market Price Changed`);
-    }
-
-    prices[selected] = Math.max(1, Math.round(prices[selected]));
-    const now = new Date().toLocaleTimeString();
-    labels.push(now);
-    data.datasets[0].data.push(prices[selected]);
-
-    if (labels.length > 20) {
-      labels.shift();
-      data.datasets[0].data.shift();
-    }
-
-    chart.update();
-    updateUI();
-  }
-
-  function updateUI() {
-    priceDisplay.textContent = prices[selected];
-    cashDisplay.textContent = cash.toFixed(2);
-    inventoryDisplay.textContent = inventory[selected];
-    selectedItemDisplay.textContent = selected;
-    profitDisplay.textContent = profit[selected].toFixed(2);
-    playerCountDisplay.textContent = fakePlayerCount;
-    updateLeaderboard();
-
-    localStorage.setItem('cash', cash);
-    localStorage.setItem('fakePlayerCount', maxFakePlayers);
-    localStorage.setItem('inventory', JSON.stringify(inventory));
-    localStorage.setItem('profit', JSON.stringify(profit));
-  }
-
-  function buy() {
-    const amount = parseInt(document.getElementById("amount").value);
-    const total = amount * prices[selected];
-    if (cash >= total) {
-      cash -= total;
-      inventory[selected] += amount;
-      logToConsole(`YOU BOUGHT ${amount} ${selected} for $${total}`);
-alert(`YOU BOUGHT ${amount} ${selected} for $${total}`);
-      updateUI();
-    } else {
-      alert("Not enough cash!");
-    }
-  }
-
-  function sell() {
-    const amount = parseInt(document.getElementById("amount").value);
-    if (inventory[selected] >= amount) {
-      const earned = amount * prices[selected];
-      cash += earned;
-      inventory[selected] -= amount;
-      profit[selected] += earned;
-      logToConsole(`YOU SOLD ${amount} ${selected} for $${earned}`);
-      alert(`YOU SOLD ${amount} ${selected} for $${earned}`);
-      updateUI();
-    } else {
-      alert("Not enough inventory!");
-    }
-  }
-
-  function changeFakePlayerCount(val) {
-    maxFakePlayers = parseInt(val);
-    localStorage.setItem('fakePlayerCount', maxFakePlayers);
-  }
-
-  function randomizeFakePlayerCount() {
-    fakePlayerCount = Math.floor(Math.random() * maxFakePlayers) + 1;
-    updateUI();
-  }
-
-  function switchItem(item) {
-    selected = item;
-    labels.length = 0;
-    data.datasets[0].data.length = 0;
-    data.datasets[0].label = `${selected} Price`;
-    updateUI();
-  }
-
-  updateUI();
-  updateChart();
-  setInterval(updateChart, 3000);
-  setInterval(randomizeFakePlayerCount, 50000);
 </script>
 
+<script>
+let eggs = JSON.parse(localStorage.getItem("eggs")) || [];
+let pets = JSON.parse(localStorage.getItem("pets")) || [];
+let activePassiveMultiplier = 1;
+let passiveTimeout = null;
+
+// 🎲 Egg Metadata
+const eggTypes = {
+  "Basic Egg": {
+    hatchTime: 30 * 1000, // TEST: 30s for demo
+    price: 500,
+    pool: [
+      { name: "Coin Cat", chance: 100, passive: null, description: "A cat who loves shiny coins." }
+    ]
+  },
+  "Rare Egg": {
+    hatchTime: 45 * 1000,
+    price: 1500,
+    pool: [
+      { name: "Market Monkey", chance: 70, passive: "x2-sell-10s", description: "A savvy trader with bananas in stocks." },
+      { name: "Coin Cat", chance: 30, passive: null, description: "A cat who loves shiny coins." }
+    ]
+  },
+  "Legendary Egg": {
+    hatchTime: 60 * 1000,
+    price: 5000,
+    pool: [
+      { name: "Greedy Gecko", chance: 50, passive: "x2-sell-20s", description: "A lizard obsessed with gold and speed." },
+      { name: "Market Monkey", chance: 50, passive: "x2-sell-10s", description: "A savvy trader with bananas in stocks." }
+    ]
+  }
+};
+
+function buyEgg(type) {
+  const egg = eggTypes[type];
+  if (!egg) return;
+  if (cash < egg.price) return alert("Not enough cash!");
+  if (!confirm(`Buy ${type} for $${egg.price}?`)) return;
+
+  eggs.push({
+    type,
+    boughtAt: Date.now(),
+    hatchAt: Date.now() + egg.hatchTime,
+    hatched: false
+  });
+
+  cash -= egg.price;
+  saveEggs();
+  updateUI();
+  renderEggs();
+  logToConsole(`🥚 You bought a ${type}`);
+}
+
+function tryHatch(index) {
+  const egg = eggs[index];
+  if (!egg || egg.hatched === false || Date.now() < egg.hatchAt)
+    return alert("This egg isn't ready yet!");
+
+  const pet = getRandomPetFromEgg(egg.type);
+  addPet(pet);
+  eggs.splice(index, 1);
+  saveEggs();
+  renderEggs();
+  logToConsole(`🎉 You hatched a ${pet.name}!`);
+}
+
+function getRandomPetFromEgg(type) {
+  const pool = eggTypes[type]?.pool || [];
+  const roll = Math.random() * 100;
+  let cumulative = 0;
+  for (const p of pool) {
+    cumulative += p.chance;
+    if (roll <= cumulative) {
+      return {
+        name: p.name,
+        customName: null,
+        age: 0,
+        asleep: false,
+        stats: {
+          strength: Math.floor(Math.random() * 100),
+          luck: Math.floor(Math.random() * 100),
+          speed: Math.floor(Math.random() * 100)
+        },
+        passive: p.passive || null,
+        description: p.description || "A mysterious pet."
+      };
+    }
+  }
+  return {
+    name: "Coin Cat",
+    customName: null,
+    age: 0,
+    asleep: false,
+    stats: { strength: 10, luck: 10, speed: 10 },
+    passive: null,
+    description: "A cat who loves shiny coins."
+  };
+}
+
+function addPet(pet) {
+  pets.push(pet);
+  savePets();
+  renderPets();
+}
+
+function sellPet(index) {
+  const pet = pets[index];
+  if (pet.asleep) return alert("This pet is asleep and cannot be sold.");
+  const baseSell = pet.stats.strength + pet.stats.luck + pet.stats.speed;
+  const sellAmount = baseSell * activePassiveMultiplier;
+
+  if (!confirm(`Sell ${pet.name} for $${sellAmount}?`)) return;
+
+  if (pet.passive?.startsWith("x2-sell")) {
+    const duration = parseInt(pet.passive.split("-")[2]) * 1000;
+    activateSellBoost(duration);
+    logToConsole(`✨ Passive Activated: x2 Sell for ${duration / 1000}s!`);
+  }
+
+  cash += sellAmount;
+  pets.splice(index, 1);
+  savePets();
+  updateUI();
+  renderPets();
+  logToConsole(`You sold ${pet.name} for $${sellAmount}`);
+}
+
+function renamePet(index) {
+  const newName = prompt("Give your pet a new name:");
+  if (!newName) return;
+  pets[index].customName = newName;
+  savePets();
+  renderPets();
+}
+
+function toggleSleep(index) {
+  pets[index].asleep = !pets[index].asleep;
+  savePets();
+  renderPets();
+}
+
+function activateSellBoost(ms) {
+  activePassiveMultiplier = 2;
+  clearTimeout(passiveTimeout);
+  passiveTimeout = setTimeout(() => {
+    activePassiveMultiplier = 1;
+    logToConsole("⏳ Sell Boost expired.");
+  }, ms);
+}
+
+function renderEggs() {
+  const container = document.getElementById("eggList");
+  container.innerHTML = eggs.length === 0 ? "<p>No eggs yet.</p>" : "";
+
+  eggs.forEach((egg, index) => {
+    const timeLeft = Math.max(egg.hatchAt - Date.now(), 0);
+    const minutes = Math.floor((timeLeft / 1000 / 60) % 60);
+    const seconds = Math.floor((timeLeft / 1000) % 60);
+    const ready = timeLeft <= 0;
+    if (ready) egg.hatched = true;
+
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <p><b>${egg.type}</b> – ${ready ? "✅ Ready!" : `⏳ ${minutes}m ${seconds}s`}</p>
+      <button class="greenbutton" onclick="tryHatch(${index})" ${!ready ? "disabled" : ""}>Hatch</button>
+      <hr>
+    `;
+    container.appendChild(div);
+  });
+
+  saveEggs();
+}
+
+function renderPets() {
+  const container = document.getElementById("petList");
+  container.innerHTML = pets.length === 0 ? "<p>No pets yet.</p>" : "";
+
+  pets.forEach((pet, index) => {
+    const div = document.createElement("div");
+    div.style.border = "1px solid #888";
+    div.style.padding = "8px";
+    div.style.margin = "5px 0";
+    div.style.borderRadius = "10px";
+    div.innerHTML = `
+      <p><b>${pet.customName || pet.name}</b> – Age: ${pet.age}d ${pet.asleep ? "😴 (Sleeping)" : ""}</p>
+      <p>${pet.description}</p>
+      <p>Stats: 📊 +${pet.stats.strength}% | 🍀 ${pet.stats.luck}% | ⚡ ${pet.stats.speed}%</p>
+      ${pet.passive ? `<p>🎁 Passive: <b>${pet.passive}</b></p>` : ""}
+      <button onclick="toggleSleep(${index})">${pet.asleep ? "Wake Up" : "Put to Sleep"}</button>
+      <button onclick="renamePet(${index})">Rename</button>
+      <button class="redbutton" onclick="sellPet(${index})">Sell Pet</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function saveEggs() {
+  localStorage.setItem("eggs", JSON.stringify(eggs));
+}
+function savePets() {
+  localStorage.setItem("pets", JSON.stringify(pets));
+}
+
+function agePets() {
+  pets.forEach(p => p.age++);
+  savePets();
+  renderPets();
+}
+
+setInterval(() => {
+  eggs.forEach(e => {
+    if (!e.hatched && Date.now() >= e.hatchAt) e.hatched = true;
+  });
+  renderEggs();
+}, 1000);
+
+setInterval(agePets, 5 * 60 * 1000);
+
+renderEggs();
+renderPets();
+
+</script>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+window.addEventListener("load", () => {
+  switchTab("baseTab"); 
+  
+});
+
+</script>
 </body>
 </html>
