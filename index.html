@@ -1,302 +1,913 @@
-<!-- Replace your entire HTML with this shortened version -->
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>Grow A Stock</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { background: #111; color: #fff; font-family: Arial; padding: 20px; margin: 0; }
-    .chart-canvas { background: #222; border: 1px solid #555; }
-    .controls { margin-top: 20px; }
-    input, button, select { font-size: 16px; padding: 5px; margin: 5px; }
-    #console { background: #000; padding: 10px; font-family: monospace; height: 150px; overflow-y: auto; border: 1px solid #333; margin-top: 10px; }
-    #leaderboard { margin-top: 20px; border: 1px solid #555; padding: 10px; background: #1a1a1a; }
-    #leaderboard h3 { margin-top: 0; color: #777; }
-    #leaderboard ul { list-style: none; padding: 0; margin: 0; }
-    #leaderboard li { margin-bottom: 5px; }
-    .redbutton, .greenbutton {
-      border-radius: 10px; border: 0px; width: 20%; height: 60%; color: white;
-    }
-    .redbutton { background-color: crimson; }
-    .greenbutton { background-color: #597; }
-    .redbutton:hover, .greenbutton:hover { background-color: grey; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R$ Trader | Browser Board</title>
+    <style>
+        :root {
+            --primary: #ff4d4d;
+            --secondary: #4287f5;
+            --dark: #1a1a2e;
+            --light: #f5f5f5;
+            --success: #4CAF50;
+            --warning: #FFC107;
+            --danger: #F44336;
+        }
 
-    .bottom-nav {
-      position: fixed; bottom: 0; width: 100%; background: #1a1a1a;
-      display: flex; justify-content: space-around; border-top: 1px solid #333;
-      padding: 10px 0; z-index: 100;
-    }
-    .bottom-nav button {
-      background: none; color: white; border: none; font-size: 14px;
-      flex: 1; padding: 5px 0; transition: color 0.2s ease;
-    }
-    .bottom-nav button:hover { color: gold; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    @media (min-width: 800px) {
-      .bottom-nav { display: none; }
-    }
-  </style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            border-radius: 8px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .balance {
+            color: var(--success);
+        }
+
+        .portfolio-value {
+            color: var(--secondary);
+        }
+
+        .profit {
+            color: var(--primary);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .chart {
+            height: 300px;
+            width: 100%;
+        }
+
+        .trading-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .game-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .game-option {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .game-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .game-option.active {
+            background: var(--secondary);
+        }
+
+        .trade-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .price-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .price {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .price-change {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .positive {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: var(--success);
+        }
+
+        .negative {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: var(--danger);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-row input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .input-row input:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-buy {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-buy:hover {
+            background-color: #3d8b40;
+        }
+
+        .btn-sell {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-sell:hover {
+            background-color: #d32f2f;
+        }
+
+        .portfolio-section {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .portfolio-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .portfolio-table th {
+            text-align: left;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .portfolio-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .portfolio-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .profit-cell {
+            font-weight: bold;
+        }
+
+        .positive-profit {
+            color: var(--success);
+        }
+
+        .negative-profit {
+            color: var(--danger);
+        }
+
+        .action-cell {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .sell-btn {
+            background: var(--danger);
+            color: white;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 102;
+        }
+
+        .notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--danger);
+        }
+    </style>
 </head>
 <body>
-  <h1>Grow A Stock 📊</h1>
-  <p>Grow Your Stock and Gain Cash</p>
-  <p>Learn to grow a stock and trade like an empire</p>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>R$ Trader</h1>
+            </div>
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Balance</h3>
+                    <p class="balance" id="balance">10,000 R$</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Portfolio Value</h3>
+                    <p class="portfolio-value" id="portfolio-value">0 R$</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Profit</h3>
+                    <p class="profit" id="total-profit">0 R$ (0%)</p>
+                </div>
+            </div>
+        </header>
 
-  <div id="baseTab" class="tab-content active">
-    <div id="leaderboard">
-      <h3>Top Profit Global</h3>
-      <ul id="leaderboardList"></ul>
+        <div class="main-content">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title" id="chart-title">Adopt Me! - Robux Value</div>
+                </div>
+                <div class="chart">
+                    <canvas id="price-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="trading-panel">
+                <div class="game-selector">
+                    <!-- Game options will be added dynamically -->
+                </div>
+                <div class="trade-form">
+                    <div class="price-info">
+                        <div>
+                            <span>Current Price:</span>
+                            <span class="price" id="current-price">100 R$</span>
+                        </div>
+                        <div>
+                            <span>24h Change:</span>
+                            <span class="price-change positive" id="price-change">+5.2%</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="amount">Amount to Buy/Sell</label>
+                        <div class="input-row">
+                            <input type="number" id="amount" placeholder="0" min="1" value="1">
+                            <button class="btn" id="max-btn" style="background: rgba(255,255,255,0.1);">MAX</button>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="total">Total Cost/Value</label>
+                        <input type="text" id="total" placeholder="0 R$" readonly>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-buy" id="buy-btn">BUY</button>
+                        <button class="btn btn-sell" id="sell-btn" disabled>SELL</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="portfolio-section">
+                <h2 class="section-title">Your Portfolio</h2>
+                <table class="portfolio-table">
+                    <thead>
+                        <tr>
+                            <th>Game</th>
+                            <th>Amount</th>
+                            <th>Avg. Price</th>
+                            <th>Current Price</th>
+                            <th>Value</th>
+                            <th>Profit</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="portfolio-table">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 30px;">Your portfolio is empty. Start trading!</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <figure>Cash: $<span id="cashDisplay">1000</span> • Profit: <span id="profitDisplay">0</span>%</figure>
-    <figure>User Active: <span id="playerCountDisplay">3</span></figure>
-
-    <canvas id="Chart" style="min-width:300px;height:300px;" class="chart-canvas"></canvas>
-
-    <p>Market Price: $<span id="priceDisplay">0</span></p>
-    <p>Item: (<span id="selectedItemDisplay">Gold</span> <span id="inventoryDisplay">0</span>x)</p>
-
-    <div class="controls">
-      <select id="itemSelector" onchange="switchItem(this.value)">
-        <option value="Gold">Gold</option>
-        <option value="Crypto">Crypto</option>
-        <option value="Oil">Oil</option>
-      </select>
-
-      <input type="number" id="amount" placeholder="Amount" value="1">
-      <hr>
-      <button class="greenbutton" onclick="buy()">Buy</button>
-      <button class="redbutton" onclick="sell()">Sell</button>
-
-      <p>Console:</p>
-      <div id="console"></div>
+    <div class="notification" id="notification">
+        <span id="notification-message">Trade executed successfully!</span>
     </div>
 
-    <h3>🐾 Your Pets:</h3>
-    <div id="petList"></div>
-    <hr style="margin-bottom:200px;">
-  </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Game data with initial prices
+        const games = [
+            { id: 'gag', name: 'Grow a Garden', currentPrice: 100, volatility: 0.15 },
+            { id: 'sab', name: 'Steal a Brainrot', currentPrice: 85, volatility: 0.12 },
+            { id: '9nitf', name: '99 Nights in the Forest', currentPrice: 120, volatility: 0.2 },
+            { id: 'bhrp', name: 'Brookhaven RP', currentPrice: 95, volatility: 0.18 },
+            { id: 'ig', name: 'Ink Game', currentPrice: 110, volatility: 0.16 }
+        ];
 
-  <div class="bottom-nav">
-    <button onclick="switchTab('baseTab')">Base</button>
-  </div>
+        // User data
+        let user = {
+            balance: 250,
+            portfolio: {},
+            selectedGame: 'gag'
+        };
 
-  <!-- Sounds -->
-  <audio id="graphSound" src="Sounds/sound-3.mp3"></audio>
-  <audio id="orderSound" src="Sounds/sound-1.mp3"></audio>
-  <audio id="eventSound" src="Sounds/sound-2.mp3"></audio>
-  <audio id="buy" src="Sounds/sound-4.mp3"></audio>
-  <audio id="sell" src="Sounds/sound-5.mp3"></audio>
+        // Chart data for each game
+        let chartData = {};
+        let priceChart;
 
-  <!-- JavaScript -->
-  <script>
-// Cleaned JS Script (Eggs removed)
+        // DOM elements
+        const balanceEl = document.getElementById('balance');
+        const portfolioValueEl = document.getElementById('portfolio-value');
+        const totalProfitEl = document.getElementById('total-profit');
+        const chartTitleEl = document.getElementById('chart-title');
+        const currentPriceEl = document.getElementById('current-price');
+        const priceChangeEl = document.getElementById('price-change');
+        const amountInput = document.getElementById('amount');
+        const totalInput = document.getElementById('total');
+        const buyBtn = document.getElementById('buy-btn');
+        const sellBtn = document.getElementById('sell-btn');
+        const maxBtn = document.getElementById('max-btn');
+        const portfolioTableEl = document.getElementById('portfolio-table');
+        const gameSelectorEl = document.querySelector('.game-selector');
+        const notificationEl = document.getElementById('notification');
+        const notificationMessageEl = document.getElementById('notification-message');
 
-let cash = parseFloat(localStorage.getItem('cash')) || 100;
-let maxFakePlayers = parseInt(localStorage.getItem('fakePlayerCount')) || 100;
-let fakePlayerCount = Math.floor(Math.random() * maxFakePlayers) + 1;
+        // Initialize the app
+        function init() {
+            // Generate initial chart data for all games
+            generateAllChartData();
+            
+            // Render game selector
+            renderGameSelector();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Load initial game data
+            loadGameData(user.selectedGame);
+            
+            // Update portfolio display
+            updatePortfolioDisplay();
+            
+            // Update balance display
+            updateBalance();
+        }
 
-const inventory = JSON.parse(localStorage.getItem('inventory')) || { Gold: 0, Crypto: 0, Oil: 0 };
-const profit = JSON.parse(localStorage.getItem('profit')) || { Gold: 0, Crypto: 0, Oil: 0 };
-const prices = { Gold: 50, Crypto: 120, Oil: 40 };
-let selected = 'Gold';
+        // Generate chart data for all games
+        function generateAllChartData() {
+            games.forEach(game => {
+                chartData[game.id] = generateChartData(game, 30);
+            });
+        }
 
-const consoleDiv = document.getElementById("console");
-const labels = [];
-const data = {
-  labels: labels,
-  datasets: [{
-    label: 'Price',
-    data: [],
-    backgroundColor: 'rgba(0,255,0,0.1)',
-    borderColor: '#597',
-    segment: {
-      borderColor: ctx => ctx.p1.parsed.y < ctx.p0.parsed.y ? 'Crimson' : '#597',
-      backgroundColor: ctx => ctx.p1.parsed.y < ctx.p0.parsed.y ? 'rgba(220,20,60,0.1)' : 'rgba(0,255,0,0.1)'
-    },
-    tension: 0.2,
-    pointRadius: 3,
-    pointHoverRadius: 8,
-    pointHoverBackgroundColor: '#597'
-  }]
-};
+        // Generate random chart data for a game
+        function generateChartData(game, points) {
+            const data = [];
+            let currentPrice = game.currentPrice;
+            let previousPrice = currentPrice;
+            
+            for (let i = 0; i < points; i++) {
+                // Calculate price change based on volatility
+                const changePercent = (Math.random() * 2 - 1) * game.volatility;
+                currentPrice = previousPrice * (1 + changePercent / 100);
+                currentPrice = Math.max(1, currentPrice);
+                
+                data.push({
+                    x: i,
+                    y: currentPrice
+                });
+                
+                previousPrice = currentPrice;
+            }
+            
+            // Update the game's current price to the latest generated price
+            game.currentPrice = currentPrice;
+            
+            return data;
+        }
 
-const config = {
-  type: 'line',
-  data: data,
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: {
-      duration: 800,
-      easing: 'easeOutQuart'
-    },
-    scales: {
-      y: { ticks: { color: '#fff' }, grid: { color: '#444' } },
-      x: { ticks: { color: '#fff' }, grid: { color: '#444' } }
-    },
-    plugins: { legend: { labels: { color: '#fff' } } }
-  }
-};
+        // Render game selector options
+        function renderGameSelector() {
+            gameSelectorEl.innerHTML = '';
+            
+            games.forEach(game => {
+                const gameOption = document.createElement('div');
+                gameOption.className = `game-option ${game.id === user.selectedGame ? 'active' : ''}`;
+                gameOption.dataset.gameId = game.id;
+                gameOption.textContent = game.name;
+                
+                gameSelectorEl.appendChild(gameOption);
+            });
+        }
 
-let chart;
+        // Set up event listeners
+        function setupEventListeners() {
+            // Game selection
+            document.querySelectorAll('.game-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    user.selectedGame = option.dataset.gameId;
+                    document.querySelectorAll('.game-option').forEach(opt => opt.classList.remove('active'));
+                    option.classList.add('active');
+                    loadGameData(user.selectedGame);
+                });
+            });
+            
+            // Amount input
+            amountInput.addEventListener('input', updateTotal);
+            
+            // Max button
+            maxBtn.addEventListener('click', setMaxAmount);
+            
+            // Buy button
+            buyBtn.addEventListener('click', executeBuy);
+            
+            // Sell button
+            sellBtn.addEventListener('click', executeSell);
+        }
 
-window.addEventListener("load", () => {
-  switchTab("baseTab");
-  const ctx = document.getElementById('Chart').getContext('2d');
-  chart = new Chart(ctx, config);
-  updateUI();
-  updateChart();
-  setInterval(updateChart, 3000);
-  setInterval(randomizeFakePlayerCount, 50000);
-});
+        // Load game data and update UI
+        function loadGameData(gameId) {
+            const game = games.find(g => g.id === gameId);
+            if (!game) return;
+            
+            // Update chart title
+            chartTitleEl.textContent = `${game.name} - Robux Value`;
+            
+            // Update current price and change
+            currentPriceEl.textContent = `${game.currentPrice.toFixed(2)} R$`;
+            
+            // Calculate 24h change (from chart data)
+            const gameData = chartData[game.id];
+            if (gameData.length >= 2) {
+                const prevPrice = gameData[gameData.length - 2].y;
+                const currentPrice = gameData[gameData.length - 1].y;
+                const changePercent = ((currentPrice - prevPrice) / prevPrice) * 100;
+                
+                priceChangeEl.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+                priceChangeEl.className = `price-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+            }
+            
+            // Update chart
+            updateChart(gameId);
+            
+            // Update total
+            updateTotal();
+            
+            // Update sell button state based on portfolio
+            updateSellButtonState();
+        }
 
-function playSound(id) {
-  const audio = document.getElementById(id);
-  if (audio) {
-    audio.currentTime = 0;
-    audio.play();
-  }
-}
+        // Update the price chart
+        function updateChart(gameId) {
+            const ctx = document.getElementById('price-chart').getContext('2d');
+            const data = chartData[gameId];
+            
+            // Destroy previous chart if it exists
+            if (priceChart) {
+                priceChart.destroy();
+            }
+            
+            // Create new chart
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map((_, i) => i + 1),
+                    datasets: [{
+                        label: 'Robux Value',
+                        data: data.map(d => d.y),
+                        borderColor: '#4287f5',
+                        backgroundColor: 'rgba(66, 135, 245, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                callback: function(value) {
+                                    return value + ' R$';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} R$`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
-function updateChart() {
-  const previousPrice = prices[selected];
-  let baseDelta = (Math.random() - 0.5) * 5;
-  prices[selected] = Math.max(1, Math.round(prices[selected] + baseDelta));
+        // Update total cost/value based on amount input
+        function updateTotal() {
+            const amount = parseInt(amountInput.value) || 0;
+            const game = games.find(g => g.id === user.selectedGame);
+            
+            if (game && amount > 0) {
+                const total = amount * game.currentPrice;
+                totalInput.value = `${total.toFixed(2)} R$`;
+            } else {
+                totalInput.value = '0 R$';
+            }
+        }
 
-  for (let i = 0; i < fakePlayerCount; i++) {
-    const action = Math.random() > 0.5 ? "buy" : "sell";
-    const amount = Math.floor(Math.random() * 100) + 1;
-    prices[selected] += (action === "buy" ? 1 : -1) * amount * 0.2;
-    if (Math.random() < 0.05) logToConsole(`🧍 A User ${action.toUpperCase()} ${amount} ${selected}`);
-  }
+        // Set max amount based on balance
+        function setMaxAmount() {
+            const game = games.find(g => g.id === user.selectedGame);
+            if (!game) return;
+            
+            const maxAffordable = Math.floor(user.balance / game.currentPrice);
+            amountInput.value = maxAffordable > 0 ? maxAffordable : 1;
+            updateTotal();
+        }
 
-  if (Math.random() < 0.001) {
-    const spike = Math.floor(Math.random() * 50) + 500;
-    prices[selected] += spike;
-    logToConsole(`🧍 A user buy 1K+ ${selected}, price jumped by $${spike}!`);
-    playSound("eventSound"); playSound("orderSound");
-  }
+        // Update sell button state based on portfolio
+        function updateSellButtonState() {
+            const hasPosition = user.portfolio[user.selectedGame] && user.portfolio[user.selectedGame].amount > 0;
+            sellBtn.disabled = !hasPosition;
+            
+            if (hasPosition) {
+                const position = user.portfolio[user.selectedGame];
+                amountInput.max = position.amount;
+            }
+        }
 
-  if (Math.random() < 0.001) {
-    const spike = Math.floor(Math.random() * 50) + 150;
-    prices[selected] += spike;
-    logToConsole(`📈 MARKET: ${selected} surged by $${spike}!`);
-    playSound("orderSound");
-  }
+        // Execute buy order
+        function executeBuy() {
+            const amount = parseInt(amountInput.value) || 0;
+            const game = games.find(g => g.id === user.selectedGame);
+            
+            if (!game || amount <= 0) {
+                showNotification('Please enter a valid amount', 'error');
+                return;
+            }
+            
+            const totalCost = amount * game.currentPrice;
+            
+            if (totalCost > user.balance) {
+                showNotification('Insufficient balance', 'error');
+                return;
+            }
+            
+            // Deduct from balance
+            user.balance -= totalCost;
+            
+            // Add to portfolio
+            if (!user.portfolio[game.id]) {
+                user.portfolio[game.id] = {
+                    amount: 0,
+                    avgPrice: 0,
+                    totalCost: 0
+                };
+            }
+            
+            const position = user.portfolio[game.id];
+            const newTotalCost = position.totalCost + totalCost;
+            const newAmount = position.amount + amount;
+            
+            position.avgPrice = newTotalCost / newAmount;
+            position.amount = newAmount;
+            position.totalCost = newTotalCost;
+            
+            // Update UI
+            updateBalance();
+            updatePortfolioDisplay();
+            updateSellButtonState();
+            
+            // Show success notification
+            showNotification(`Bought ${amount} ${game.name} Robux for ${totalCost.toFixed(2)} R$`, 'success');
+            
+            // Reset amount input
+            amountInput.value = 1;
+            updateTotal();
+        }
 
-  if (Math.random() < 0.01) {
-    const boom = Math.random() > 0.5;
-    prices[selected] += boom ? 20 : -20;
-    logToConsole(`📊 ${selected} ${boom ? 'BOOM!' : 'CRASH!'}`);
-    playSound("eventSound"); playSound("orderSound");
-  }
+        // Execute sell order
+        function executeSell() {
+            const amount = parseInt(amountInput.value) || 0;
+            const game = games.find(g => g.id === user.selectedGame);
+            const position = user.portfolio[game.id];
+            
+            if (!position || amount <= 0) {
+                showNotification('Please enter a valid amount', 'error');
+                return;
+            }
+            
+            if (amount > position.amount) {
+                showNotification(`You only have ${position.amount} to sell`, 'error');
+                return;
+            }
+            
+            const totalValue = amount * game.currentPrice;
+            const profit = totalValue - (amount * position.avgPrice);
+            
+            // Add to balance
+            user.balance += totalValue;
+            
+            // Update portfolio
+            position.amount -= amount;
+            position.totalCost -= amount * position.avgPrice;
+            
+            // If position is closed, remove from portfolio
+            if (position.amount <= 0) {
+                delete user.portfolio[game.id];
+            }
+            
+            // Update UI
+            updateBalance();
+            updatePortfolioDisplay();
+            updateSellButtonState();
+            
+            // Show success notification
+            const profitText = profit >= 0 ? 
+                `(Profit: +${profit.toFixed(2)} R$)` : 
+                `(Loss: ${profit.toFixed(2)} R$)`;
+            showNotification(`Sold ${amount} ${game.name} Robux for ${totalValue.toFixed(2)} R$ ${profitText}`, 'success');
+            
+            // Reset amount input
+            amountInput.value = 1;
+            updateTotal();
+        }
 
-  prices[selected] = Math.max(1, Math.round(prices[selected]));
+        // Update balance display
+        function updateBalance() {
+            balanceEl.textContent = `${user.balance.toFixed(2)} R$`;
+            
+            // Calculate portfolio value and total profit
+            let portfolioValue = 0;
+            let totalProfit = 0;
+            let totalInvested = 0;
+            
+            Object.keys(user.portfolio).forEach(gameId => {
+                const position = user.portfolio[gameId];
+                const game = games.find(g => g.id === gameId);
+                
+                if (game) {
+                    const currentValue = position.amount * game.currentPrice;
+                    portfolioValue += currentValue;
+                    totalInvested += position.totalCost;
+                    totalProfit += (currentValue - position.totalCost);
+                }
+            });
+            
+            const profitPercent = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+            
+            portfolioValueEl.textContent = `${portfolioValue.toFixed(2)} R$`;
+            totalProfitEl.textContent = `${totalProfit >= 0 ? '+' : ''}${totalProfit.toFixed(2)} R$ (${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)`;
+            totalProfitEl.className = `profit ${totalProfit >= 0 ? 'positive' : 'negative'}`;
+        }
 
-  if (prices[selected] > previousPrice) playSound("graphSound");
+        // Update portfolio display
+        function updatePortfolioDisplay() {
+            const positions = Object.keys(user.portfolio);
+            
+            if (positions.length === 0) {
+                portfolioTableEl.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 30px;">Your portfolio is empty. Start trading!</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            positions.forEach(gameId => {
+                const position = user.portfolio[gameId];
+                const game = games.find(g => g.id === gameId);
+                
+                if (game) {
+                    const currentValue = position.amount * game.currentPrice;
+                    const profit = currentValue - position.totalCost;
+                    const profitPercent = (profit / position.totalCost) * 100;
+                    
+                    html += `
+                        <tr>
+                            <td>${game.name}</td>
+                            <td>${position.amount}</td>
+                            <td>${position.avgPrice.toFixed(2)} R$</td>
+                            <td>${game.currentPrice.toFixed(2)} R$</td>
+                            <td>${currentValue.toFixed(2)} R$</td>
+                            <td class="profit-cell ${profit >= 0 ? 'positive-profit' : 'negative-profit'}">
+                                ${profit >= 0 ? '+' : ''}${profit.toFixed(2)} R$ (${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%)
+                            </td>
+                            <td class="action-cell">
+                                <button class="action-btn sell-btn" data-game-id="${game.id}">Sell</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            portfolioTableEl.innerHTML = html;
+            
+            // Add event listeners to sell buttons
+            document.querySelectorAll('.action-btn.sell-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    user.selectedGame = btn.dataset.gameId;
+                    
+                    // Update game selector
+                    document.querySelectorAll('.game-option').forEach(opt => {
+                        opt.classList.toggle('active', opt.dataset.gameId === user.selectedGame);
+                    });
+                    
+                    // Load game data
+                    loadGameData(user.selectedGame);
+                    
+                    // Set amount to max
+                    const position = user.portfolio[user.selectedGame];
+                    if (position) {
+                        amountInput.value = position.amount;
+                        updateTotal();
+                    }
+                });
+            });
+        }
 
-  const now = new Date().toLocaleTimeString();
-  labels.push(now);
-  data.datasets[0].data.push(prices[selected]);
+        // Show notification
+        function showNotification(message, type) {
+            notificationMessageEl.textContent = message;
+            notificationEl.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notificationEl.classList.remove('show');
+            }, 3000);
+        }
 
-  if (labels.length > 20) {
-    labels.shift();
-    data.datasets[0].data.shift();
-  }
-
-  chart.update();
-  updateUI();
-}
-
-function updateUI() {
-  document.getElementById("priceDisplay").textContent = prices[selected];
-  document.getElementById("cashDisplay").textContent = cash.toFixed(2);
-  document.getElementById("inventoryDisplay").textContent = inventory[selected];
-  document.getElementById("selectedItemDisplay").textContent = selected;
-  document.getElementById("profitDisplay").textContent = profit[selected].toFixed(2);
-  document.getElementById("playerCountDisplay").textContent = fakePlayerCount;
-  updateLeaderboard();
-  localStorage.setItem('cash', cash);
-  localStorage.setItem('fakePlayerCount', maxFakePlayers);
-  localStorage.setItem('inventory', JSON.stringify(inventory));
-  localStorage.setItem('profit', JSON.stringify(profit));
-}
-
-function buy() {
-  const amount = parseInt(document.getElementById("amount").value);
-  const total = amount * prices[selected];
-  if (cash >= total) {
-    if (!confirm(`Buy ${amount} ${selected} for $${total}?`)) return;
-    cash -= total;
-    inventory[selected] += amount;
-    playSound("buy");
-    logToConsole(`✅ YOU BOUGHT ${amount} ${selected} for $${total}`);
-    updateUI();
-  } else {
-    alert("Not enough cash!");
-  }
-}
-
-function sell() {
-  const amount = parseInt(document.getElementById("amount").value);
-  if (inventory[selected] >= amount) {
-    const earned = amount * prices[selected];
-    if (!confirm(`Sell ${amount} ${selected} for $${earned}?`)) return;
-    cash += earned;
-    inventory[selected] -= amount;
-    profit[selected] += earned;
-    playSound("sell");
-    logToConsole(`💰 YOU SOLD ${amount} ${selected} for $${earned}`);
-    updateUI();
-  } else {
-    alert("Not enough inventory!");
-  }
-}
-
-function changeFakePlayerCount(val) {
-  maxFakePlayers = parseInt(val);
-  localStorage.setItem('fakePlayerCount', maxFakePlayers);
-}
-
-function randomizeFakePlayerCount() {
-  fakePlayerCount = Math.floor(Math.random() * maxFakePlayers) + 1;
-  updateUI();
-}
-
-function switchItem(item) {
-  selected = item;
-  labels.length = 0;
-  data.datasets[0].data.length = 0;
-  data.datasets[0].label = `${selected} Price`;
-  updateUI();
-}
-
-function switchTab(id) {
-  document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-}
-
-function logToConsole(msg) {
-  const line = document.createElement("div");
-  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-  consoleDiv.appendChild(line);
-  consoleDiv.scrollTop = consoleDiv.scrollHeight;
-}
-
-function updateLeaderboard() {
-  const leaderboardList = document.getElementById("leaderboardList");
-  leaderboardList.innerHTML = '';
-  const sorted = Object.entries(profit).sort((a, b) => b[1] - a[1]).slice(0, 3);
-  for (const [item] of sorted) {
-    const fakeProfit = (Math.random() * 5000 + 100).toFixed(2);
-    const li = document.createElement('li');
-    li.textContent = `${item}: $${fakeProfit}`;
-    leaderboardList.appendChild(li);
-  }
-}
-
-  </script>
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
 </html>
